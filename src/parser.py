@@ -1,0 +1,104 @@
+# coding=utf-8
+
+'''
+Created on Oct 3, 2012
+
+@author: changlei
+'''
+import re
+import log
+import urllib2
+from patent import Patent
+
+class Parser(object):
+
+    def __init__(self, content):
+        '''
+        Constructor
+        '''
+        self.content = content
+        self.logger = log.LOG().getlogger()
+        
+    def __get_patent_href(self):
+        regex = u"<h2 class=\"PatentTypeBlock\">[\s\S]*?<a href='(.*?)'[\s\S]*?</h2>"
+        return  re.findall(regex, self.content)
+
+    def __get_page(self, url):
+        res = urllib2.urlopen(url)
+        html = res.read()
+        return unicode(html, 'utf-8','ignore')
+    
+    def __get_patent_id(self, href):
+        return href[href.rfind("/")+1:]
+    
+    def get_download_url(self, patent_id):
+        pass
+    
+    def __parse_item(self, regex, page_content):
+        item = ""
+        res = re.findall(regex, page_content)
+        if len(res) > 0:
+            item = res[0].strip()
+        return item
+    
+    def __parse_title(self, page_content):
+        regex = u"<h1>([\s\S]*?)<div"
+        return self.__parse_item(regex, page_content)
+    
+    def __parse_abstract(self, page_content):
+        regex = u"<b class=\"black\">摘要：</b>([\s\S]*?)</td>"
+        return self.__parse_item(regex, page_content)
+    
+    def __parse_author(self, page_content):
+        regex = u"<b class=\"black\">申请人：</b>[\s\S]*?>([\s\S]*?)</a>"
+        return self.__parse_item(regex, page_content)
+    
+    def __parse_author_address(self, page_content):
+        regex = u"<b class=\"black\">地址：</b>([\s\S]*?)</td>"
+        return self.__parse_item(regex, page_content)
+    
+    def __parse_notes(self, page_content):
+        regex = u"<i>申请号：(.*?) 申请日"
+        return self.__parse_item(regex, page_content)
+    
+    def __parse_date(self, page_content):
+        regex = u"公开日[\s\S]*?>&nbsp;(.*?)</td>"
+        return self.__parse_item(regex, page_content)
+    
+    def __parse_download_url(self, patent_id):
+        url = "http://www.soopat.com/Home/DownloadChoice/%s" % patent_id
+        page_content = self.__get_page(url)
+        regex = u"<a href=\"(.*?)\?Server=\" target=\"_blank\">联通线路下载</a>"
+        return self.__parse_item(regex, page_content)
+    
+    def get_patent_info(self, href):
+        patent_id = self.__get_patent_id(href)
+        base_url = "http://www.soopat.com"
+        
+        url = base_url + href
+        page_content = self.__get_page(url)
+        title = self.__parse_title(page_content)
+        abstract = self.__parse_abstract(page_content)
+        author = self.__parse_author(page_content)
+        author_address = self.__parse_author_address(page_content)
+        notes = self.__parse_notes(page_content)
+        date = self.__parse_date(page_content)
+        download_url = base_url + self.__parse_download_url(patent_id)
+        
+        patent = Patent(title, author, date, abstract, url, download_url, author_address, notes)
+        self.logger.info("parse patent ok, content is %s" % patent.to_dict())
+        return patent
+            
+    def get_patents(self):
+        patents = []
+        hrefs = self.__get_patent_href()
+        for href in hrefs:
+            patent_info = self.get_patent_info(href)
+            patents.append(patent_info)
+        return patents
+            
+if __name__ == '__main__':
+    parser = Parser("")
+    href = "/Patent/200910239621"
+    patent_info = parser.get_patent_info(href)
+    
