@@ -4,6 +4,7 @@
 Created on Oct 3, 2012
 
 @author: changlei
+@email: changlei.abc@gmail.com
 '''
 
 import re

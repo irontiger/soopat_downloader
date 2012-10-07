@@ -4,9 +4,12 @@
 Created on Oct 3, 2012
 
 @author: changlei
+@email: changlei.abc@gmail.com
 '''
 import re
 import log
+import time
+import random
 import urllib2
 from patent import Patent
 
@@ -43,6 +46,10 @@ class Parser(object):
     
     def __parse_title(self, page_content):
         regex = u"<h1>([\s\S]*?)<div"
+        return self.__parse_item(regex, page_content)
+    
+    def __parse_state(self, page_content):
+        regex = u"<h1>[\s\S]*?>([\s\S]*?)</div>"
         return self.__parse_item(regex, page_content)
     
     def __parse_abstract(self, page_content):
@@ -84,8 +91,10 @@ class Parser(object):
         notes = self.__parse_notes(page_content)
         date = self.__parse_date(page_content)
         download_url = base_url + self.__parse_download_url(patent_id)
+        state = self.__parse_state(page_content)
         
-        patent = Patent(title, author, date, abstract, url, download_url, author_address, notes)
+        author = author.replace("(", "").replace(")", "")
+        patent = Patent(title, author, date, abstract, url, download_url, author_address, notes, state)
         self.logger.info("parse patent ok, content is %s" % patent.to_dict())
         return patent
             
@@ -93,12 +102,16 @@ class Parser(object):
         patents = []
         hrefs = self.__get_patent_href()
         for href in hrefs:
+            sleep_seconds = random.randint(5, 20)
+            self.logger.info("sleep for %s seconds" % sleep_seconds)
+            time.sleep(sleep_seconds)
             patent_info = self.get_patent_info(href)
             patents.append(patent_info)
         return patents
             
 if __name__ == '__main__':
     parser = Parser("")
-    href = "/Patent/200910239621"
+    href = "/Patent/200610030996"
     patent_info = parser.get_patent_info(href)
+    print patent_info.to_ne()
     

@@ -4,11 +4,12 @@
 Created on Oct 4, 2012
 
 @author: changlei
+@email: changlei.abc@gmail.com
 '''
 
 class Patent(object):
 
-    def __init__(self, title, author, date, abstract, url, download_url, author_address = None, notes = None):
+    def __init__(self, title, author, date, abstract, url, download_url, author_address = None, notes = None, state = None):
         self.reference_type = "Patent"
         self.title = title
         self.author = author
@@ -18,6 +19,7 @@ class Patent(object):
         self.download_url = download_url
         self.author_address = author_address
         self.notes = notes
+        self.state = state
     
     def to_dict(self):
         dct = {}
@@ -49,5 +51,6 @@ class Patent(object):
         ne = ne + "".join(("{Author Address}: ", self.author_address, "\r\n"))
         ne = ne + "".join(("{Notes}: ", self.notes, "\r\n"))
         ne = ne + "".join(("{Year}: ", self.date[:4], "\r\n"))
+        ne = ne + "".join(("{Custom 1}: ", self.state, "\r\n"))
         
         return ne

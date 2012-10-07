@@ -30,7 +30,7 @@ class LOG:
             logger = logging.getLogger()
             logger.setLevel(LOG.loglevel)
 
-            handler = logging.handlers.RotatingFileHandler(LOG.logfile, maxBytes=40960, backupCount=5)
+            handler = logging.handlers.RotatingFileHandler(LOG.logfile, maxBytes=4096000, backupCount=5)
             formatter = logging.Formatter("%(asctime)s %(levelname)s [%(thread)d@%(threadName)s] (%(filename)s:%(lineno)d) - %(message)s") 
             handler.setFormatter(formatter)
 

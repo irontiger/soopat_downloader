@@ -4,6 +4,7 @@
 Created on Oct 5, 2012
 
 @author: changlei
+@email: changlei.abc@gmail.com
 '''
 import log
 import time
@@ -44,19 +45,33 @@ class Downloader(object):
         if not opener:
             self.logger.error("opener is None")
         else:
-            index = 0
+            index = 1
             for patent in self.patents:
-                self.logger.info("start to download %s in %s patents, title: %s" % (index, len(self.patents), self.title))
-                sleep_seconds = random.randint(5, 20)
+                self.logger.info("start to download %s in %s patents, title: %s" % (index, len(self.patents), patent.title))
+                sleep_seconds = random.randint(5, 30)
                 self.logger.info("sleep for %s seconds" % sleep_seconds)
                 time.sleep(sleep_seconds)
                 op = opener.open(patent.download_url)
                 data = op.read()
                 with open( patent.title+".pdf", "wb") as f:
                     f.write(data)
-                self.logger.info("end of download %s in %s patents, title: %s" % (index, len(self.patents), self.title))
+                self.logger.info("end of download %s in %s patents, title: %s" % (index, len(self.patents), patent.title))
                 index += 1
 
 if __name__ == '__main__':
-    dler = Downloader([])
+
+    from patent import Patent
+    
+    title = "动态负载均衡系统"
+    author = "北京天润融通科技有限公司"
+    date = "2012-07-18"
+    abstract = "本发明公开了一种动态负载均衡系统，该系统包括客户A的电话"
+    url = "http://www.soopat.com/Patent/201210080259"
+    download_url = "http://www.soopat.com/Home/DownloadRemote/837A885AB57D6A3903688CAEA88544BDDE2F65B6F3AC51ED.pdf"
+    author_address = "100176 北京市大兴区亦庄经济技术开发区地盛北街1号北工大软件园18号楼5层"
+    notes = "201210080259.2"
+    
+    pat = Patent(title, author, date, abstract, url, download_url, author_address, notes)
+    dler = Downloader([pat])
+    
 

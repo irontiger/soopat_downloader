@@ -4,12 +4,14 @@
 Created on Oct 3, 2012
 
 @author: changlei
+@email: changlei.abc@gmail.com
 '''
 
 import log
 import sys
 import time
 import random
+import codecs
 from spider import SoopatSpider
 from parser import Parser
 from downloader import Downloader
@@ -18,7 +20,7 @@ from optparse import OptionParser
 logfile = 'soopt_downloader.log'
 logger = log.LOG(logfile).getlogger()
 
-def get_patent_page_num(search_result_num, default_page_num = 1):
+def get_patent_page_num(search_result_num, default_page_num = 10):
     page_size = 10
     real_page_num =  (search_result_num + page_size/2)/10 
     
@@ -30,9 +32,6 @@ def get_patent_page_num(search_result_num, default_page_num = 1):
 def get_page_patents(keyword, page_num):
     patent_index = page_num * 10
     spider = SoopatSpider()
-    sleep_seconds = random.randint(1, 10)
-    logger.info("sleep for %s seconds" % sleep_seconds)
-    time.sleep(sleep_seconds)
     content = spider.soopat_search(keyword, patent_index)
     parser = Parser(content)
     logger.info("get page %s patents ok" % page_num) 
@@ -59,15 +58,16 @@ def get_all_page_patents(keyword):
 def save_patents_to_ne(patents, file_name):
     is_save_ok = False
     try:
-        file_object = open(file_name, 'w+')
+        f = codecs.open(file_name, "w", "utf-8")
         for patent in patents:
-            file_object.write(patent.to_ne())
+            f.write(patent.to_ne())
+            f.write("\n")
         is_save_ok = True
     except Exception, e:
         logger.info(e)
         raise Exception
     finally:
-        file_object.close( )
+        f.close( )
         logger.info("save patents to ne %s" % is_save_ok)
         return is_save_ok
     
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     print "start to save patents to noteexpress style"
     file_name = keyword + ".txt"
     save_patents_to_ne(patents, file_name)
-    print "end ofsave patents to noteexpress style"
+    print "end of save patents to noteexpress style"
     
     print "start to download patents"
     download_patents(patents, username, password)
