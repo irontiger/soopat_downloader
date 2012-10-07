@@ -1,6 +1,7 @@
 soopat_downloader
 =================
 
+<pre>
 www.soopat.com 是一个免费的专利搜索和下载引擎，soopat_downloader是python写的一个批量解析并下载专利文献的工具。
 
 使用方法：
@@ -29,5 +30,6 @@ contact me: mail:       changlei.abc@gmail.com
 
 enjoy!
 
+</pre>
                         
                         
