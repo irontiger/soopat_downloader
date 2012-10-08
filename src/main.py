@@ -20,7 +20,7 @@ from optparse import OptionParser
 logfile = 'soopt_downloader.log'
 logger = log.LOG(logfile).getlogger()
 
-def get_patent_page_num(search_result_num, default_page_num = 10):
+def get_patent_page_num(search_result_num, default_page_num = 5):
     page_size = 10
     real_page_num =  (search_result_num + page_size/2)/10 
     
@@ -72,13 +72,20 @@ def save_patents_to_ne(patents, file_name):
         return is_save_ok
     
 def download_patents(patents, username, password):
-    dler = Downloader(patents)
-    dler.download_patents(username, password)
+    dler = Downloader(username, password)
+    dler.download_patents(patents)
+    
+def re_download_failed_patents(username, password):
+    dler = Downloader(username, password)
+    patents = dler.parse_download_failed_patents()
+    dler.download_patents(patents)
         
 if __name__ == '__main__':
     usage = "usage: %prog [options] arg"
 
     parser = OptionParser(usage)
+    parser.add_option("-c", "--cmd", dest="cmd", default="download",
+                  help="download|download_failed_patents")
     parser.add_option("-k", "--keyword", dest="keyword", default="负载均衡",
                       help="the keyword to be searched")
     parser.add_option("-u", "--username", dest="username",
@@ -87,6 +94,7 @@ if __name__ == '__main__':
                       help="password to login website")
 
     (options, args) = parser.parse_args()
+    cmd = options.cmd
     keyword = options.keyword
     username = options.username
     password = options.password
@@ -95,15 +103,22 @@ if __name__ == '__main__':
         print "please input username and password"
         parser.print_help()
         sys.exit(1)
-    
-    patents = get_all_page_patents(keyword)
-    
-    print "start to save patents to noteexpress style"
-    file_name = keyword + ".txt"
-    save_patents_to_ne(patents, file_name)
-    print "end of save patents to noteexpress style"
-    
-    print "start to download patents"
-    download_patents(patents, username, password)
-    print "end of download patents"
+        
+    if cmd == "download":
+        patents = get_all_page_patents(keyword)
+        print "start to save patents to noteexpress style"
+        file_name = keyword + ".ne"
+        save_patents_to_ne(patents, file_name)
+        print "end of save patents to noteexpress style"
+        
+        print "start to download patents"
+        download_patents(patents, username, password)
+        print "end of download patents"
+    elif cmd == "download_failed_patents":
+        print "start to re download failed patents"
+        re_download_failed_patents(username, password)
+        print "end of re download failed patents"
+    else:
+        parser.print_help()
+        sys.exit(1)
     

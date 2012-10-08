@@ -7,19 +7,24 @@ Created on Oct 5, 2012
 @email: changlei.abc@gmail.com
 '''
 import log
+import json
 import time
 import random
 import urllib
 import urllib2
 import cookielib
 
+DOWNLOAD_FAILED_FILE = "download_failed_patents.txt"
+
 class Downloader(object):
 
-    def __init__(self, patents):
-        self.patents = patents
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+        self.can_download = True
         self.logger = log.LOG().getlogger()
     
-    def get_opener(self, username, password):
+    def get_opener(self):
         rtn_opener = None
         login_page = "http://t.soopat.com/index.php?mod=login&code=dologin"
         try:
@@ -28,10 +33,10 @@ class Downloader(object):
             opener.addheaders = [('User-agent','Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)')]
             post_data = {
                 'FORMHASH': '0cbba408b58f6291',
-                'username': username,
+                'username': self.username,
                 'loginType':'share',
                 'return_url':'http://www.soopat.com/Home/Index',
-                'password': password
+                'password': self.password
             }
             opener.open(login_page, urllib.urlencode(post_data))
             rtn_opener = opener
@@ -39,29 +44,76 @@ class Downloader(object):
             self.logger.error(str(e))
             raise Exception(str(e))
         return rtn_opener
+    
+    def __download_patent(self, opener, patent):
+        is_download_success = True
         
-    def download_patents(self, username, password):
-        opener = self.get_opener(username, password)
+        op = opener.open(patent.download_url)
+        data = op.read()
+        if data.find("ValidateImageCode") >= 0:
+            is_download_success = False
+            self.logger.error("sorry, cannot recongnize the image, patent url %s" % patent.url)
+        
+        if is_download_success:
+            pdfname = patent.title.replace("/", "_") + ".pdf"
+            self.logger.info("patent file name %s, content length %s" % (pdfname, len(data)))
+            with open(pdfname, "wb") as f:
+                f.write(data)
+                
+        return is_download_success
+        
+    def download_patents(self, patents = []):
+        opener = self.get_opener()
         if not opener:
             self.logger.error("opener is None")
         else:
             index = 1
-            for patent in self.patents:
-                self.logger.info("start to download %s in %s patents, title: %s" % (index, len(self.patents), patent.title))
-                sleep_seconds = random.randint(5, 30)
-                self.logger.info("sleep for %s seconds" % sleep_seconds)
-                time.sleep(sleep_seconds)
-                op = opener.open(patent.download_url)
-                data = op.read()
-                with open( patent.title+".pdf", "wb") as f:
-                    f.write(data)
-                self.logger.info("end of download %s in %s patents, title: %s" % (index, len(self.patents), patent.title))
+            failed_patents = []
+            for patent in patents:
+                if self.can_download:
+                    is_download_success = self.__download_patent(opener, patent)
+                    if is_download_success:
+                        self.logger.info("download %s success, %s in %s patents" % (patent.title, index, len(patents)))
+                        sleep_seconds = random.randint(30, 60)
+                        self.logger.info("sleep for %s seconds" % sleep_seconds)
+                        time.sleep(sleep_seconds)
+                    else:
+                        self.logger.error("sorry, cannot recongnize the image")
+                        self.can_download = False
+                        failed_patents.append(patent)
+                else:
+                    failed_patents.append(patent)
                 index += 1
+                
+            if failed_patents:
+                with open(DOWNLOAD_FAILED_FILE, "w") as f:
+                    for pat in failed_patents:
+                        f.write(json.dumps(pat.to_dict()))
+                f.close()
 
+    def parse_download_failed_patents(self, failed_file = DOWNLOAD_FAILED_FILE):
+        failed_patents = []
+        try:
+            with open(failed_file, "r") as f:
+                line = f.readline()
+                while line:
+                    js = json.loads(line, "utf-8")
+                    pat = Patent(js["title"], js["author"], js["date"], js["abstract"], 
+                                 js["url"], js["download_url"], js["author_address"], js["notes"], js["state"])
+                    
+                    failed_patents.append(pat)
+                    line = f.readline()
+        except Exception, e:
+            self.logger.error("read failed_patents file, get exception, msg %s" % str(e))
+            
+        return failed_patents
+            
 if __name__ == '__main__':
 
     from patent import Patent
     
+    username = ""
+    password = ""
     title = "动态负载均衡系统"
     author = "北京天润融通科技有限公司"
     date = "2012-07-18"
@@ -72,6 +124,9 @@ if __name__ == '__main__':
     notes = "201210080259.2"
     
     pat = Patent(title, author, date, abstract, url, download_url, author_address, notes)
-    dler = Downloader([pat])
+    dler = Downloader(username, password)
+    dler.download_patents([pat])
+    
+    
     
 
