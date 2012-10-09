@@ -15,12 +15,13 @@ from patent import Patent
 
 class Parser(object):
 
-    def __init__(self, content):
+    def __init__(self, content=""):
         '''
         Constructor
         '''
         self.content = content
         self.logger = log.LOG().getlogger()
+        self.base_url = "http://www.soopat.com"
         
     def __get_patent_href(self):
         regex = u"<h2 class=\"PatentTypeBlock\">[\s\S]*?<a href='(.*?)'[\s\S]*?</h2>"
@@ -31,11 +32,9 @@ class Parser(object):
         html = res.read()
         return unicode(html, 'utf-8','ignore')
     
-    def __get_patent_id(self, href):
-        return href[href.rfind("/")+1:]
-    
-    def get_download_url(self, patent_id):
-        pass
+    def __get_patent_id(self, url):
+        url = url.strip()
+        return url[url.rfind("/")+1:]
     
     def __parse_item(self, regex, page_content):
         item = ""
@@ -69,7 +68,7 @@ class Parser(object):
         return self.__parse_item(regex, page_content)
     
     def __parse_date(self, page_content):
-        regex = u"公开日[\s\S]*?>&nbsp;(.*?)</td>"
+        regex = u">公开日[\s\S]*?>&nbsp;(.*?)</td>"
         return self.__parse_item(regex, page_content)
     
     def __parse_download_url(self, patent_id):
@@ -78,11 +77,9 @@ class Parser(object):
         regex = u"<a href=\"(.*?)\?Server=\" target=\"_blank\">联通线路下载</a>"
         return self.__parse_item(regex, page_content)
     
-    def get_patent_info(self, href):
-        patent_id = self.__get_patent_id(href)
-        base_url = "http://www.soopat.com"
+    def get_patent_info(self, url):
+        patent_id = self.__get_patent_id(url)
         
-        url = base_url + href
         page_content = self.__get_page(url)
         title = self.__parse_title(page_content)
         abstract = self.__parse_abstract(page_content)
@@ -90,7 +87,7 @@ class Parser(object):
         author_address = self.__parse_author_address(page_content)
         notes = self.__parse_notes(page_content)
         date = self.__parse_date(page_content)
-        download_url = base_url + self.__parse_download_url(patent_id)
+        download_url = self.base_url + self.__parse_download_url(patent_id)
         state = self.__parse_state(page_content)
         
         author = author.replace("(", "").replace(")", "")
@@ -105,13 +102,13 @@ class Parser(object):
             sleep_seconds = random.randint(5, 20)
             self.logger.info("sleep for %s seconds" % sleep_seconds)
             time.sleep(sleep_seconds)
-            patent_info = self.get_patent_info(href)
+            patent_info = self.get_patent_info(self.base_url + href)
             patents.append(patent_info)
         return patents
             
 if __name__ == '__main__':
-    parser = Parser("")
-    href = "/Patent/200610030996"
-    patent_info = parser.get_patent_info(href)
+    parser = Parser()
+    url = "http://www.soopat.com/Patent/200810052954"
+    patent_info = parser.get_patent_info(url)
     print patent_info.to_ne()
     

@@ -7,14 +7,11 @@ Created on Oct 5, 2012
 @email: changlei.abc@gmail.com
 '''
 import log
-import json
 import time
 import random
 import urllib
 import urllib2
 import cookielib
-
-DOWNLOAD_FAILED_FILE = "download_failed_patents.txt"
 
 class Downloader(object):
 
@@ -52,7 +49,6 @@ class Downloader(object):
         data = op.read()
         if data.find("ValidateImageCode") >= 0:
             is_download_success = False
-            self.logger.error("sorry, cannot recongnize the image, patent url %s" % patent.url)
         
         if is_download_success:
             pdfname = patent.title.replace("/", "_") + ".pdf"
@@ -63,12 +59,12 @@ class Downloader(object):
         return is_download_success
         
     def download_patents(self, patents = []):
+        failed_patents = []
         opener = self.get_opener()
         if not opener:
             self.logger.error("opener is None")
         else:
             index = 1
-            failed_patents = []
             for patent in patents:
                 if self.can_download:
                     is_download_success = self.__download_patent(opener, patent)
@@ -84,36 +80,16 @@ class Downloader(object):
                 else:
                     failed_patents.append(patent)
                 index += 1
-                
-            if failed_patents:
-                with open(DOWNLOAD_FAILED_FILE, "w") as f:
-                    for pat in failed_patents:
-                        f.write(json.dumps(pat.to_dict()))
-                f.close()
-
-    def parse_download_failed_patents(self, failed_file = DOWNLOAD_FAILED_FILE):
-        failed_patents = []
-        try:
-            with open(failed_file, "r") as f:
-                line = f.readline()
-                while line:
-                    js = json.loads(line, "utf-8")
-                    pat = Patent(js["title"], js["author"], js["date"], js["abstract"], 
-                                 js["url"], js["download_url"], js["author_address"], js["notes"], js["state"])
-                    
-                    failed_patents.append(pat)
-                    line = f.readline()
-        except Exception, e:
-            self.logger.error("read failed_patents file, get exception, msg %s" % str(e))
             
-        return failed_patents
+            return failed_patents
             
 if __name__ == '__main__':
-
+    
     from patent import Patent
     
     username = ""
     password = ""
+    
     title = "动态负载均衡系统"
     author = "北京天润融通科技有限公司"
     date = "2012-07-18"
@@ -127,6 +103,3 @@ if __name__ == '__main__':
     dler = Downloader(username, password)
     dler.download_patents([pat])
     
-    
-    
-
