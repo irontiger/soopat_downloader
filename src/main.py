@@ -18,6 +18,11 @@ from spider import SoopatSpider
 from parser import Parser
 from downloader import Downloader
 from optparse import OptionParser
+from argparse import ArgumentParser
+
+__DESCRIPTION__ = "soopat tool, to parse soopat content and write to noteexpress style"
+__VERSION__ = 0.2
+__CONTACT__ = 'For more information, please contact changlei.abc@gmail.com'
 
 logfile = 'soopt_downloader.log'
 logger = log.LOG(logfile).getlogger()
@@ -57,16 +62,13 @@ def get_all_page_patents(keyword):
     logger.info("end to get patents, keyword %s" % keyword)
     return all_patents
 
-def get_url_patents(urlfile):
+def get_url_patents(url):
     all_patents = []
     parser = Parser()
     
     try:
-        with open(urlfile, "r") as f:
-            line = f.readline()
-            pat = parser.get_patent_info(line)
-            all_patents.append(pat)
-            line = f.readline()
+        pat = parser.get_patent_info(url)
+        all_patents.append(pat)
     except Exception, e:
         logger.error("get url patents from file get exception, msg %s" % str(e))
     
@@ -123,95 +125,111 @@ def save_patents_to_ne(patents, file_name):
 def download_patents(patents, username, password):
     dler = Downloader(username, password)
     dler.download_patents(patents)
-        
-if __name__ == '__main__':
-    usage = "usage: %prog [options] arg"
 
-    parser = OptionParser(usage)
-    parser.add_option("-c", "--cmd", dest="cmd", default="parse",
-                  help="parse|download|write2ne")
-    parser.add_option("-k", "--keyword", dest="keyword", default="负载均衡",
-                      help="the keyword to be searched")
-    parser.add_option("-i", "--input", dest="input",
-                      help="for cmd parse: indicate url file to be parsed.        for cmd download/write2ne: indicate patents result file.")
-    parser.add_option("-o", "--output", dest="output",
-                      help="for cmd parse: indicate parse result to be parsed.    for cmd download: indicate download failed patents.  for cmd write2ne: indicate noteexpress style description")
-    parser.add_option("-u", "--username", dest="username",
-                      help="username to login website when download patents")
-    parser.add_option("-p", "--pasword", dest="password",
-                      help="password to login website when download patents")
 
-    (options, args) = parser.parse_args()
-    cmd = options.cmd
-    keyword = options.keyword
-    input = options.input
-    output = options.output
-    username = options.username
-    password = options.password
-        
-    if cmd == "parse":
-        if not (keyword or input):
-            print "keyword or input, at least one must specifed"
-            parser.print_help()
-            sys.exit(1)
-            
-        if not output:
-            print "output must specifed"
-            parser.print_help()
-            sys.exit(1)
-            
-        patents = []
-        print "start to parse patents"
-        if keyword:
-            patents = get_all_page_patents(keyword)
-        if input:
-            patents = get_url_patents(input)
-        print "end of parse patents"
-        
-        file_name = output.replace(".", "_") + ".pat"
-        is_success = write_patents(patents, file_name)
-        if is_success:
-            print "write patents to file %s success" % file_name
-        else:
-            print "failed to get patents"
-        
-    elif cmd == "write2ne":
-        if not(input and output):
-            print "input and output must specifed"
-            parser.print_help()
-            sys.exit(1)
-        
-        patents = read_patents(input)
-        file_name = output.replace(".", "_") + ".ne"
-        
-        print "start to save patents to noteexpress style"
-        save_patents_to_ne(patents, file_name)
-        print "end of save patents to noteexpress style"
-    
-    elif cmd == "download":
-        if not(input and output):
-            print "input and output must specifed"
-            parser.print_help()
-            sys.exit(1)
-            
-        if not (username and password):
-            print "username and password must specifed"
-            parser.print_help()
-            sys.exit(1)
-        
-        patents = read_patents(input)
-        file_name = output.replace(".", "_") + "_failed_download.pat"
-        
-        print "start to download patents"
-        failed_patents = download_patents(patents, username, password)
-        if failed_patents:
-            print "write download failed patents to file %s" % file_name
-            is_success = write_patents(patents, file_name)
-            print "end of download, and exist download failed patents"
-        else:
-            print "download success"
-            
-    else:
+HELP_INFO = dict(
+                 input = 'the output of parse result file',
+                 parse_input = 'keyword or patent url. when url, must contain word Patent ',
+                 parse_output = 'write parse result to file',
+                 is_write2ne = 'write to noteexpress or not, default is True',
+                 write2ne_output = 'write to noteexpress style',
+                 download_output = 'download failed patents',
+                 username = 'username to login website',
+                 password = 'password to login website',
+                 )
+
+def parse_command_line():
+    parser = ArgumentParser(description=__DESCRIPTION__, epilog=__CONTACT__)
+    subparsers = parser.add_subparsers()
+
+    parse_parser = subparsers.add_parser('parse', help='parse soopat content')
+    parse_parser.add_argument('-i', dest='input', default='', help=HELP_INFO['parse_input'])
+    parse_parser.add_argument('-o', dest='output', default='', help=HELP_INFO['parse_output'])
+    parse_parser.add_argument('-w', dest='iswrite2ne', default=True, help=HELP_INFO['is_write2ne'])
+
+    write2ne_parser = subparsers.add_parser('write2ne', help='write to noteexpress style')
+    write2ne_parser.add_argument('-i', dest='input', default='', help=HELP_INFO['input'])
+    write2ne_parser.add_argument('-o', dest='output', default='', help=HELP_INFO['write2ne_output'])
+
+    download_parser = subparsers.add_parser('download', help='download patent files')
+    download_parser.add_argument('-i', dest='input', default='', help=HELP_INFO['input'])
+    download_parser.add_argument('-o', dest='output', default='', help=HELP_INFO['download_output'])
+    download_parser.add_argument('-u', dest='username', default='', help=HELP_INFO['username'])
+    download_parser.add_argument('-p', dest='password', default='', help=HELP_INFO['password'])
+
+    return parser.parse_args(sys.argv[1:]), parser
+
+def main():
+    args, parser = parse_command_line()
+
+    def sys_exit(parser):
         parser.print_help()
         sys.exit(1)
-    
+
+    try:
+        if not args.input:
+            print "must specify -i"
+            sys_exit(parser)
+        if not args.output:
+            print "must specify -o"
+            sys_exit(parser)
+        
+        if sys.argv[1] == 'parse':
+            patents = []
+            print "start to parse patents"
+            if args.input.find('Patent') >= 0:
+                patents = get_url_patents(args.input)
+            else:
+                patents = get_all_page_patents(args.keyword)
+            print "end of parse patents"
+            
+            file_name = args.output.replace(".", "_")
+            pat_name = file_name + ".pat"
+            is_success = write_patents(patents, pat_name)
+            if is_success:
+                print "write patents to file %s success" % file_name
+            else:
+                print "write patents failed"
+                sys.exit(1)
+
+            if args.iswrite2ne:
+                ne_name = file_name + ".ne"
+                print "start to save patents to noteexpress style"
+                save_patents_to_ne(patents, ne_name)
+                print "end of save patents to noteexpress style"
+
+        elif sys.argv[1] == 'write2ne':
+            patents = read_patents(args.input)
+            file_name = args.output.replace(".", "_") + ".ne"
+            print "start to save patents to noteexpress style"
+            save_patents_to_ne(patents, file_name)
+            print "end of save patents to noteexpress style"
+
+        elif sys.argv[1] == 'download':
+            if not args.username:
+                print "must specify -u"
+                sys_exit(parser)
+            if not args.password:
+                print "must specify -p"
+                sys_exit(parser)
+                
+            patents = read_patents(input)
+            file_name = output.replace(".", "_") + "_failed_download.pat"
+            
+            print "start to download patents"
+            failed_patents = download_patents(patents, username, password)
+            if failed_patents:
+                print "write download failed patents to file %s" % file_name
+                is_success = write_patents(patents, file_name)
+                print "end of download, and exist download failed patents"
+            else:
+                print "download success"
+                
+        else:
+            sys_exit(parser)
+
+    except Exception, e:
+        print "exception:%s" % e
+        
+if __name__ == '__main__':
+    main()
