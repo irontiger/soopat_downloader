@@ -52,5 +52,6 @@ class Patent(object):
         ne = ne + "".join(("{Notes}: ", self.notes, "\r\n"))
         ne = ne + "".join(("{Year}: ", self.date[:4], "\r\n"))
         ne = ne + "".join(("{Custom 1}: ", self.state, "\r\n"))
+        ne = ne + "".join(("{Custom 2}: ", self.download_url, "\r\n"))
         
         return ne
