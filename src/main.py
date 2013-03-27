@@ -180,7 +180,7 @@ def main():
             if args.input.find('Patent') >= 0:
                 patents = get_url_patents(args.input)
             else:
-                patents = get_all_page_patents(args.keyword)
+                patents = get_all_page_patents(args.input)
             print "end of parse patents"
             
             file_name = args.output.replace(".", "_")
