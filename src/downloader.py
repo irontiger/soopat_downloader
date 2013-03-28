@@ -91,7 +91,8 @@ if __name__ == '__main__':
     password = ""
     
     title = "动态负载均衡系统"
-    author = "北京天润融通科技有限公司"
+    applier = "北京天润融通科技有限公司"
+    author = "吴强"
     date = "2012-07-18"
     abstract = "本发明公开了一种动态负载均衡系统，该系统包括客户A的电话"
     url = "http://www.soopat.com/Patent/201210080259"
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     author_address = "100176 北京市大兴区亦庄经济技术开发区地盛北街1号北工大软件园18号楼5层"
     notes = "201210080259.2"
     
-    pat = Patent(title, author, date, abstract, url, download_url, author_address, notes)
+    pat = Patent(title, applier, author, date, abstract, url, download_url, author_address, notes)
     dler = Downloader(username, password)
     dler.download_patents([pat])
     

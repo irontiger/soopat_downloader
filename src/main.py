@@ -7,6 +7,7 @@ Created on Oct 3, 2012
 @email: changlei.abc@gmail.com
 '''
 
+import os
 import log
 import sys
 import time
@@ -96,7 +97,7 @@ def read_patents(filename):
             line = f.readline()
             while line:
                 js = json.loads(line, "utf-8")
-                pat = Patent(js["title"], js["author"], js["date"], js["abstract"], 
+                pat = Patent(js["title"], js["applier"], js["author"], js["date"], js["abstract"], 
                              js["url"], js["download_url"], js["author_address"], js["notes"], js["state"])
                 
                 patents.append(pat)
@@ -126,16 +127,48 @@ def download_patents(patents, username, password):
     dler = Downloader(username, password)
     dler.download_patents(patents)
 
+def rename_patents(patents_dir):
+
+    def is_need_rename(filename):
+        is_need = False
+
+        if len(filename) > 4 and filename[-4:].lower() == '.pdf':
+            names = filename.split('-')
+            if len(names) == 3:
+                is_need = True
+
+        return is_need
+
+    files = os.listdir(patents_dir)
+    for f in files:
+        is_need = is_need_rename(f)
+        if is_need:
+            logger.info("%s/%s need to be renamed" % (patents_dir, f)) 
+            names = f.split('-')
+            patent_id = names[0]
+            patent_url = "http://www.soopat.com/Patent/%s" % patent_id 
+            patents = get_url_patents(patent_url)
+            if len(patents) == 1:
+                patent = patents[0] 
+
+                new_patent_name =  "%s-%s%s" % (patent_id, patent.title, '.pdf')
+                old_full_name = "%s/%s" % (patents_dir, f)
+                new_full_name = "%s/%s" % (patents_dir, new_patent_name)
+                msg = "rename %s to %s" % (old_full_name.decode('utf-8'), new_full_name)
+                print msg
+                logger.info(msg)
+                os.rename(old_full_name, new_full_name)
 
 HELP_INFO = dict(
                  input = 'the output of parse result file',
                  parse_input = 'keyword or patent url. when url, must contain word Patent ',
                  parse_output = 'write parse result to file',
                  is_write2ne = 'write to noteexpress or not, default is True',
-                 write2ne_output = 'write to noteexpress style',
-                 download_output = 'download failed patents',
+                 write2ne_output = 'optional, write to noteexpress style. if null, use input as output file name',
+                 download_output = 'optional, download failed patents',
                  username = 'username to login website',
                  password = 'password to login website',
+                 directory = 'dir path which include patent pdfs',
                  )
 
 def parse_command_line():
@@ -153,9 +186,12 @@ def parse_command_line():
 
     download_parser = subparsers.add_parser('download', help='download patent files')
     download_parser.add_argument('-i', dest='input', default='', help=HELP_INFO['input'])
-    download_parser.add_argument('-o', dest='output', default='', help=HELP_INFO['download_output'])
     download_parser.add_argument('-u', dest='username', default='', help=HELP_INFO['username'])
     download_parser.add_argument('-p', dest='password', default='', help=HELP_INFO['password'])
+    download_parser.add_argument('-o', dest='output', default='', help=HELP_INFO['download_output'])
+
+    rename_parser = subparsers.add_parser('rename', help='rename patent pdf file')
+    rename_parser.add_argument('-d', dest='dir', default='', help=HELP_INFO['directory'])
 
     return parser.parse_args(sys.argv[1:]), parser
 
@@ -167,14 +203,14 @@ def main():
         sys.exit(1)
 
     try:
-        if not args.input:
-            print "must specify -i"
-            sys_exit(parser)
-        if not args.output:
-            print "must specify -o"
-            sys_exit(parser)
-        
         if sys.argv[1] == 'parse':
+            if not args.input:
+                print "must specify -i"
+                sys_exit(parser)
+            if not args.output:
+                print "must specify -o"
+                sys_exit(parser)
+
             patents = []
             print "start to parse patents"
             if args.input.find('Patent') >= 0:
@@ -199,31 +235,60 @@ def main():
                 print "end of save patents to noteexpress style"
 
         elif sys.argv[1] == 'write2ne':
+            if not args.input:
+                print "must specify -i"
+                sys_exit(parser)
+
+            if args.output:
+                file_name = args.output.replace(".", "_") + ".ne"
+            else:
+                base = os.path.basename(args.input)
+                if base.find(".pat") > 0:
+                    base = base[0:base.find(".pat")]
+                file_name = base.replace(".", "_") + ".ne"
+
             patents = read_patents(args.input)
-            file_name = args.output.replace(".", "_") + ".ne"
             print "start to save patents to noteexpress style"
             save_patents_to_ne(patents, file_name)
             print "end of save patents to noteexpress style"
 
         elif sys.argv[1] == 'download':
+            if not args.input:
+                print "must specify -i"
+                sys_exit(parser)
             if not args.username:
                 print "must specify -u"
                 sys_exit(parser)
             if not args.password:
                 print "must specify -p"
                 sys_exit(parser)
-                
+
+            if args.output:
+                file_name = args.output.replace(".", "_") + "_failed.pat"
+            else:
+                base = os.path.basename(args.input)
+                if base.find(".pat") > 0:
+                    base = base[0:base.find(".pat")]
+                file_name = base.replace(".", "_") + "_failed.pat"
             patents = read_patents(input)
-            file_name = output.replace(".", "_") + "_failed_download.pat"
             
             print "start to download patents"
             failed_patents = download_patents(patents, username, password)
             if failed_patents:
                 print "write download failed patents to file %s" % file_name
-                is_success = write_patents(patents, file_name)
+                is_success = write_patents(failed_patents, file_name)
                 print "end of download, and exist download failed patents"
             else:
                 print "download success"
+
+        elif sys.argv[1] == 'rename':
+            if not os.path.isdir(args.dir):
+                print "must specify -d"
+                sys_exit(parser)
+
+            print "start to rename patents"
+            rename_patents(args.dir)
+            print "end of rename patents"
                 
         else:
             sys_exit(parser)

@@ -54,9 +54,14 @@ class Parser(object):
     def __parse_abstract(self, page_content):
         regex = u"<b class=\"black\">摘要：</b>([\s\S]*?)</td>"
         return self.__parse_item(regex, page_content)
+
+    def __parse_applier(self, page_content):
+        regex = u"<b class=\"black\">申请人：</b>[\s\S]*?>([\s\S]*?)</a>"
+        return self.__parse_item(regex, page_content)
     
     def __parse_author(self, page_content):
-        regex = u"<b class=\"black\">申请人：</b>[\s\S]*?>([\s\S]*?)</a>"
+        regex = u"<b class=\"black\">发明.*</b>[\s\S]*?>([\s\S]*?)</a>"
+        #regex = u"<b class=\"black\">发明(设计)人：</b>[\s\S]*?>([\s\S]*?)</a>"
         return self.__parse_item(regex, page_content)
     
     def __parse_author_address(self, page_content):
@@ -83,6 +88,7 @@ class Parser(object):
         page_content = self.__get_page(url)
         title = self.__parse_title(page_content)
         abstract = self.__parse_abstract(page_content)
+        applier = self.__parse_applier(page_content)
         author = self.__parse_author(page_content)
         author_address = self.__parse_author_address(page_content)
         notes = self.__parse_notes(page_content)
@@ -91,7 +97,7 @@ class Parser(object):
         state = self.__parse_state(page_content)
         
         author = author.replace("(", "").replace(")", "")
-        patent = Patent(title, author, date, abstract, url, download_url, author_address, notes, state)
+        patent = Patent(title, applier, author, date, abstract, url, download_url, author_address, notes, state)
         self.logger.info("parse patent ok, content is %s" % patent.to_dict())
         return patent
             
