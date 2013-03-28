@@ -28,7 +28,7 @@ __CONTACT__ = 'For more information, please contact changlei.abc@gmail.com'
 logfile = 'soopt_downloader.log'
 logger = log.LOG(logfile).getlogger()
 
-def get_patent_page_num(search_result_num, default_page_num = 1):
+def get_patent_page_num(search_result_num, default_page_num = 5):
     page_size = 10
     real_page_num =  (search_result_num + page_size/2)/page_size 
     
@@ -52,6 +52,7 @@ def get_all_page_patents(keyword):
     content = spider.soopat_search(keyword)
     search_result_num = spider.get_search_result_num(content)
     page_num = get_patent_page_num(search_result_num)
+
     for i in range(page_num):
         sleep_seconds = random.randint(5, 20)
         logger.info("sleep for %s seconds" % sleep_seconds)

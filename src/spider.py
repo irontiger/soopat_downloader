@@ -30,17 +30,19 @@ class SoopatSpider(object):
         sum = 0
         regex = u"<p class=\"right\"><b>([1-9]\d*)</b>.*</p>"
         res = re.findall(regex, content)
-        logstr = "get sum of result: %s" % len(res)
         if len(res) == 1:
             sum = int(res[0])
+            logstr = "get sum of result: %s" % sum
+            self.logger.info(logstr)
         else:
-            self.logger.error(logstr)
-            raise ValueError(logstr)
+            msg = "cannot get search result"
+            self.logger.error(msg)
+            raise ValueError(msg)
         return sum
 
 if __name__ == '__main__':
     soopat = SoopatSpider()
     content = soopat.soopat_search("负载均衡")
-    sum = soopat.get_result_sum(content)
+    sum = soopat.get_search_result_num(content)
 
     print sum
