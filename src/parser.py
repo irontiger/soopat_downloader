@@ -97,7 +97,7 @@ class Parser(object):
         state = self.__parse_state(page_content)
         
         author = author.replace("(", "").replace(")", "")
-        patent = Patent(title, applier, author, date, abstract, url, download_url, author_address, notes, state)
+        patent = Patent(patent_id, title, applier, author, date, abstract, url, download_url, author_address, notes, state)
         self.logger.info("parse patent ok, content is %s" % patent.to_dict())
         return patent
             

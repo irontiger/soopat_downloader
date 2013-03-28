@@ -98,7 +98,7 @@ def read_patents(filename):
             line = f.readline()
             while line:
                 js = json.loads(line, "utf-8")
-                pat = Patent(js["title"], js["applier"], js["author"], js["date"], js["abstract"], 
+                pat = Patent(js["id"], js["title"], js["applier"], js["author"], js["date"], js["abstract"], 
                              js["url"], js["download_url"], js["author_address"], js["notes"], js["state"])
                 
                 patents.append(pat)
@@ -271,10 +271,10 @@ def main():
                 if base.find(".pat") > 0:
                     base = base[0:base.find(".pat")]
                 file_name = base.replace(".", "_") + "_failed.pat"
-            patents = read_patents(input)
+            patents = read_patents(args.input)
             
             print "start to download patents"
-            failed_patents = download_patents(patents, username, password)
+            failed_patents = download_patents(patents, args.username, args.password)
             if failed_patents:
                 print "write download failed patents to file %s" % file_name
                 is_success = write_patents(failed_patents, file_name)

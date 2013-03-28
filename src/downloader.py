@@ -51,7 +51,7 @@ class Downloader(object):
             is_download_success = False
         
         if is_download_success:
-            pdfname = patent.title.replace("/", "_") + ".pdf"
+            pdfname = "%s-%s%s" % (patent.id, patent.title.replace("/", "_"), ".pdf")
             self.logger.info("patent file name %s, content length %s" % (pdfname, len(data)))
             with open(pdfname, "wb") as f:
                 f.write(data)
@@ -90,6 +90,7 @@ if __name__ == '__main__':
     username = ""
     password = ""
     
+    id = "201210080259"
     title = "动态负载均衡系统"
     applier = "北京天润融通科技有限公司"
     author = "吴强"
@@ -100,7 +101,7 @@ if __name__ == '__main__':
     author_address = "100176 北京市大兴区亦庄经济技术开发区地盛北街1号北工大软件园18号楼5层"
     notes = "201210080259.2"
     
-    pat = Patent(title, applier, author, date, abstract, url, download_url, author_address, notes)
+    pat = Patent(id, title, applier, author, date, abstract, url, download_url, author_address, notes)
     dler = Downloader(username, password)
     dler.download_patents([pat])
     

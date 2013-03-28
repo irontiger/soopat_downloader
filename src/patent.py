@@ -9,8 +9,9 @@ Created on Oct 4, 2012
 
 class Patent(object):
 
-    def __init__(self, title, applier, author, date, abstract, url, download_url, author_address = None, notes = None, state = None):
+    def __init__(self, id, title, applier, author, date, abstract, url, download_url, author_address = None, notes = None, state = None):
         self.reference_type = "Patent"
+        self.id = id
         self.title = title
         self.applier = applier
         self.author = author
